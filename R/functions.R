@@ -592,11 +592,12 @@ census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, c
     if(test %in% c('all', 'tabula_sapiens') == F){stop("test must be either 'all' or 'tabula_sapiens'")}
   } else {allowed_nodes = NULL}
 
-  str = '\rNodes predicted: 1'
+  # str = '\rNodes predicted: 1'
   while(length(remaining_ids) > 0){
     for(i in remaining_ids){
     # loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
-      if(verbose == T & i > 1){cat(str); str = paste0(str, ', ', i, '   ')}
+      # if(verbose == T & i > 1){cat(paste(str, '   ')); str = paste0(str, ', ', i)}
+      if(verbose == T){cat(paste('\rPredicting node:', i, '   '))}
       pred_res[[i]] = predict_node(obj = obj, model = census_ts_model, node = i, allowed_nodes = allowed_nodes)
       obj$census_celltype[pred_res[[i]]$final_pred_df$barcode] = pred_res[[i]]$final_pred_df$pred
       final_pred$celltype[final_pred$barcode %in% pred_res[[i]]$final_pred_df$barcode] = pred_res[[i]]$final_pred_df$pred
@@ -650,7 +651,8 @@ census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, c
     while(length(remaining_ids) > 0){
       for(i in remaining_ids){
       # loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
-        if(verbose == T){cat(str); str = paste0(str, ', ', i)}
+        # if(verbose == T){cat(paste(str, '   ')); str = paste0(str, ', ', i)}
+        if(verbose == T){cat(paste('\rPredicting node:', i, '   '))}
         pred_res[[i]] = predict_node(obj = obj2, model = census_ts_model, node = i, allowed_nodes = allowed_nodes)
         obj2$census_celltype[pred_res[[i]]$final_pred_df$barcode] = pred_res[[i]]$final_pred_df$pred
         final_pred$celltype[final_pred$barcode %in% pred_res[[i]]$final_pred_df$barcode] = pred_res[[i]]$final_pred_df$pred
@@ -666,7 +668,8 @@ census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, c
 
   if(predict_cancer == T){
     # get epithelial cells
-    if(verbose == T){str = paste0(str, ', ', 'cancer\n   '); cat(str)}
+    # if(verbose == T){str = paste0(str, ', ', 'cancer\n   '); cat(str)}
+    if(verbose == T){cat(paste('\rPrediciting node:', 'cancer   '))}
     i = which(pred_res[['3']]$final_pred_df$pred == '7')
     obj = obj[, which(colnames(obj) %in% pred_res[['3']]$final_pred_df$barcode[i])]
     obj$census_celltype = '0'
