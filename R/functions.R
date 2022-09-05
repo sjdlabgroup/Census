@@ -278,7 +278,8 @@ census_train = function(obj,
 
   remaining_ids = '1'
   while(length(remaining_ids) > 0){
-    loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
+    for(i in remaining_ids){
+    # loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
       if(print_node == T){print(i)}
       if(!is.null(markers.list)){markers = markers.list[[i]]}
       node_res = train_node(obj = obj,
@@ -563,7 +564,7 @@ census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, c
 
 
   beginning.time = Sys.time()
-  if(verbose == T){cat('Begin Census prediction \n')}
+  if(verbose == T){cat('Started cell-type annotation \n')}
 
 
   # subset object for speed
@@ -593,8 +594,9 @@ census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, c
 
   str = '\rNodes predicted: 1'
   while(length(remaining_ids) > 0){
-    loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
-      if(verbose == T & i > 1){cat(str); str = paste0(str, ', ', i)}
+    for(i in remaining_ids){
+    # loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
+      if(verbose == T & i > 1){cat(str); str = paste0(str, ', ', i, '   ')}
       pred_res[[i]] = predict_node(obj = obj, model = census_ts_model, node = i, allowed_nodes = allowed_nodes)
       obj$census_celltype[pred_res[[i]]$final_pred_df$barcode] = pred_res[[i]]$final_pred_df$pred
       final_pred$celltype[final_pred$barcode %in% pred_res[[i]]$final_pred_df$barcode] = pred_res[[i]]$final_pred_df$pred
@@ -646,7 +648,8 @@ census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, c
     Idents(obj2) = obj2$census_celltype
 
     while(length(remaining_ids) > 0){
-      loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
+      for(i in remaining_ids){
+      # loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
         if(verbose == T){cat(str); str = paste0(str, ', ', i)}
         pred_res[[i]] = predict_node(obj = obj2, model = census_ts_model, node = i, allowed_nodes = allowed_nodes)
         obj2$census_celltype[pred_res[[i]]$final_pred_df$barcode] = pred_res[[i]]$final_pred_df$pred
@@ -663,7 +666,7 @@ census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, c
 
   if(predict_cancer == T){
     # get epithelial cells
-    if(verbose == T){cat(str); str = paste0(str, ', ', 'cancer')}
+    if(verbose == T){str = paste0(str, ', ', 'cancer\n   '); cat(str)}
     i = which(pred_res[['3']]$final_pred_df$pred == '7')
     obj = obj[, which(colnames(obj) %in% pred_res[['3']]$final_pred_df$barcode[i])]
     obj$census_celltype = '0'
