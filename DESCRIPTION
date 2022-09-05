@@ -1,0 +1,14 @@
+Package: Census
+Type: Package
+Title: Deep, fast, and fully automated cell-type annotation in scRNA-seq
+Version: 0.1.0
+Author: Bassel Ghaddar
+Maintainer: The package maintainer <bassel.ghaddar@gmail.com>
+Description: Fully automated cell-type annotation using hierarchical gradient-boosted trees and prediction contour and cluster stabilizing. 
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Imports: Seurat, xgboost, ggdendro, dendextend, ggraph, igraph, stringr, tidyverse, dplyr, MASS, sp, Matrix, gtools, foreach, matrixStats
+Depends: 
+    R (>= 2.10)
+RoxygenNote: 7.1.1
