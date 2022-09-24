@@ -582,11 +582,11 @@ census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, c
 
   if(!is.null(organ)){
     if(test == 'all'){
-      possible_celltypes = rownames(cell_organ_df)[cell_organ_df[, organ] > 0]
+      possible_celltypes = rownames(cell_organ_df)[as.matrix(which(cell_organ_df[, organ] > 0, arr.ind = T))[,1]]
       allowed_nodes = census_ts_model$hierarchy_mat[, possible_celltypes] %>% unlist() %>% unname() %>% unique()
     }
     if(test == 'tabula_sapiens'){
-      possible_celltypes = rownames(cell_organ_df)[cell_organ_df[, organ] > 1]
+      possible_celltypes = rownames(cell_organ_df)[as.matrix(which(cell_organ_df[, organ] > 1, arr.ind = T))[,1]]
       allowed_nodes = census_ts_model$hierarchy_mat[, possible_celltypes] %>% unlist() %>% unname() %>% unique()
     }
     if(test %in% c('all', 'tabula_sapiens') == F){stop("test must be either 'all' or 'tabula_sapiens'")}
