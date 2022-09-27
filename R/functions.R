@@ -10,6 +10,8 @@
 #' @importFrom dendextend "partition_leaves"
 #' @import ggraph
 #' @importFrom igraph "graph_from_data_frame"
+#' @importFrom igraph "V"
+#' @importFrom ggplot2 "coord_flip"
 #' @importFrom MASS "kde2d"
 #' @importFrom sp "point.in.polygon"
 #' @import foreach
