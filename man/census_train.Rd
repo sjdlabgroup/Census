@@ -6,7 +6,7 @@
 \usage{
 census_train(
   obj,
-  hierarchy_mat,
+  hierarchy_mat = NULL,
   celltypes,
   metadata = NULL,
   markers.list = NULL,
@@ -17,7 +17,7 @@ census_train(
   nrounds = 20,
   eval_metric = "auc",
   colsample = 0.2,
-  print_node = T,
+  verbose = T,
   ...
 )
 }

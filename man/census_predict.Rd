@@ -2,17 +2,9 @@
 % Please edit documentation in R/functions.R
 \name{census_predict}
 \alias{census_predict}
-\title{Automated cell-type annotation using the main Census model}
+\title{Use a Census model to annotate new datasets}
 \usage{
-census_predict(
-  obj,
-  organ = NULL,
-  test = "all",
-  predict_cancer = F,
-  contour_data = F,
-  verbose = T,
-  ...
-)
+census_predict(obj, model, contour_data = F, verbose = T, ...)
 }
 \arguments{
 \item{...}{Arguments passed to other methods}
@@ -21,5 +13,5 @@ census_predict(
 A ggraph object plotting the cell hiearchy
 }
 \description{
-Automated cell-type annotation using the main Census model
+Use a Census model to annotate new datasets
 }

@@ -27,6 +27,8 @@ cell_hierarchy = function(counts, celltypes, counts.bulk = NULL){
   # counts is a cell by gene matrix
   # celltypes is a character vector of cell-types for each barcode in counts
 
+  counts = Matrix::t(counts)
+
   if(is.null(counts.bulk)){
     bulk = list()
     for(i in unique(celltypes)){
@@ -259,7 +261,7 @@ train_node = function(obj,
 #' @export
 #'
 census_train = function(obj,
-                        hierarchy_mat,
+                        hierarchy_mat = NULL,
                         celltypes,
                         metadata = NULL,
                         markers.list = NULL,
@@ -270,11 +272,16 @@ census_train = function(obj,
                         nrounds = 20,
                         eval_metric = 'auc',
                         colsample = 0.2,
-                        print_node = T,
+                        verbose = T,
                         ...){
   xg.list = list()
   markers.list = list()
   auc.df = data.frame()
+
+  if(is.null(hierarchy_mat)){
+    if(verbose == T){cat('Finding cell-type hierarchy\n')}
+    hierarchy_mat = cell_hierarchy(counts@assays$RNA@counts, celltypes)
+  }
 
   cell_node_match = match(celltypes, colnames(hierarchy_mat))
 
@@ -282,7 +289,7 @@ census_train = function(obj,
   while(length(remaining_ids) > 0){
     for(i in remaining_ids){
     # loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
-      if(print_node == T){print(i)}
+      if(verbose == T){cat(paste('\rTraining node:', i, '   '))}
       if(!is.null(markers.list)){markers = markers.list[[i]]}
       node_res = train_node(obj = obj,
                             node = i,
@@ -310,7 +317,7 @@ census_train = function(obj,
     remaining_ids = which(ids %in% celltypes == F)
     remaining_ids = ids[remaining_ids] %>% sort()
   }
-
+  if(verbose == T){cat('\nDone')}
   list(models = xg.list, markers = markers.list, auc = auc.df, hierarchy_mat = hierarchy_mat)
 }
 
@@ -538,29 +545,29 @@ predict_node = function(obj, model, node, get_prob = T, allowed_nodes = NULL){
   }
 }
 
-#' Automated cell-type annotation using the main Census model
+#' Automated cell-type annotation using the main Census model trained on the Tabula Sapiens and Cancer Cell Line Encyclopedia
 #'
 #' @param ... Arguments passed to other methods
 #'
 #' @return A ggraph object plotting the cell hiearchy
 #' @export
 #'
-census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, contour_data = F, verbose = T, ...){
+census_main = function(obj, organ = NULL, test = 'all', predict_cancer = F, contour_data = F, verbose = T, ...){
 
   if('umap' %in% names(obj@reductions) == F){
     if(verbose == T){cat('Running Seurat \n')}
     obj = obj %>% NormalizeData(verbose = F) %>% ScaleData(verbose = F) %>%
       FindVariableFeatures(verbose = F) %>% RunPCA(verbose = F) %>%
       RunUMAP(dims=1:50, verbose = F) %>%
-      FindNeighbors(reduction='umap', dims=1:2,graph.name='census', verbose = F) %>%
-      FindClusters(graph.name='census', verbose = F)
+      FindNeighbors(reduction='umap', dims=1:2, verbose = F) %>%
+      FindClusters(verbose = F)
   }
 
   # get umap clusters
   if('census_clusters' %in% colnames(obj@meta.data) == F){
     if(verbose == T){cat('Finding umap clusters \n')}
-    obj = obj %>% FindNeighbors(reduction='umap', dims=1:2, graph.name='census', verbose = F) %>%
-      FindClusters(graph.name='census', verbose = F, ...)
+    obj = obj %>% FindNeighbors(reduction='umap', dims=1:2, verbose = F) %>%
+      FindClusters(verbose = F, ...)
     obj$census_clusters = obj$seurat_clusters
   }
 
@@ -702,5 +709,84 @@ census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, c
 
   list(pred = final_pred, class_hist = class_hist, prob_hist = prob_hist, pred_data = pred_res, adjusted_nodes = adjusted_nodes)
 }
+
+
+#' Use a Census model to annotate new datasets
+#'
+#' @param ... Arguments passed to other methods
+#'
+#' @return A ggraph object plotting the cell hiearchy
+#' @export
+#'
+census_predict = function(obj, model, contour_data = F, verbose = T, ...){
+
+  if('umap' %in% names(obj@reductions) == F){
+    if(verbose == T){cat('Running Seurat \n')}
+    obj = obj %>% NormalizeData(verbose = F) %>% ScaleData(verbose = F) %>%
+      FindVariableFeatures(verbose = F) %>% RunPCA(verbose = F) %>%
+      RunUMAP(dims=1:50, verbose = F) %>%
+      FindNeighbors(reduction='umap', dims=1:2,graph.name='census', verbose = F) %>%
+      FindClusters(graph.name='census', verbose = F)
+  }
+
+  # get umap clusters
+  if('census_clusters' %in% colnames(obj@meta.data) == F){
+    if(verbose == T){cat('Finding umap clusters \n')}
+    obj = obj %>% FindNeighbors(reduction='umap', dims=1:2, verbose = F) %>%
+      FindClusters(verbose = F, ...)
+    obj$census_clusters = obj$seurat_clusters
+  }
+
+
+  beginning.time = Sys.time()
+  if(verbose == T){cat('Started cell-type annotation \n')}
+
+
+  # subset object for speed
+  g = lapply(model$markers, function(y) y$gene) %>% unlist() %>% unique()
+  obj = obj[intersect(rownames(obj), g), ]
+
+  pred_res = list()
+  class_hist = data.frame(barcode = colnames(obj))
+  prob_hist = data.frame(barcode = colnames(obj))
+  final_pred = data.frame(barcode = colnames(obj), cluster = obj$census_clusters, celltype = NA)
+
+  obj$census_celltype = '1'
+  Idents(obj) = obj$census_celltype
+  remaining_ids = '1'
+
+  # str = '\rNodes predicted: 1'
+  while(length(remaining_ids) > 0){
+    for(i in remaining_ids){
+      # loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
+      # if(verbose == T & i > 1){cat(paste(str, '   ')); str = paste0(str, ', ', i)}
+      if(verbose == T){cat(paste('\rPredicting node:', i, '   '))}
+      pred_res[[i]] = predict_node(obj = obj, model = model, node = i, allowed_nodes = allowed_nodes)
+      obj$census_celltype[pred_res[[i]]$final_pred_df$barcode] = pred_res[[i]]$final_pred_df$pred
+      final_pred$celltype[final_pred$barcode %in% pred_res[[i]]$final_pred_df$barcode] = pred_res[[i]]$final_pred_df$pred
+      class_hist = left_join(class_hist, data.frame(obj$census_celltype) %>% tibble::rownames_to_column('barcode'), by = 'barcode')
+      prob_hist = left_join(prob_hist, dplyr::select(pred_res[[i]]$final_pred_df, barcode, prob), by = 'barcode')
+      Idents(obj) = obj$census_celltype
+    }
+    remaining_ids = obj$census_celltype[obj$census_celltype %in% colnames(model$hierarchy_mat) == F] %>% unique() %>% gtools::mixedsort()
+  }
+
+  if(verbose == T){cat(paste('\nDone; total prediction time =', format(Sys.time() - beginning.time, digits=3), '\n'))}
+
+  prob_hist = tibble::column_to_rownames(prob_hist, 'barcode')
+  colnames(prob_hist) = 1:ncol(prob_hist)
+
+  class_hist = tibble::column_to_rownames(class_hist, 'barcode')
+  colnames(class_hist) = 1:ncol(class_hist)
+
+  final_pred = data.frame(final_pred,
+                          umap1 = pred_res[['1']]$final_pred_df$u1,
+                          umap2 = pred_res[['1']]$final_pred_df$u2)
+
+  if(contour_data == F){pred_res = NULL}
+
+  list(pred = final_pred, class_hist = class_hist, prob_hist = prob_hist, pred_data = pred_res, adjusted_nodes = adjusted_nodes)
+}
+
 
 
