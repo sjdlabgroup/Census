@@ -317,7 +317,7 @@ census_train = function(obj,
     remaining_ids = which(ids %in% celltypes == F)
     remaining_ids = ids[remaining_ids] %>% sort()
   }
-  if(verbose == T){cat('\nDone')}
+  if(verbose == T){cat('\nDone\n')}
   list(models = xg.list, markers = markers.list, auc = auc.df, hierarchy_mat = hierarchy_mat)
 }
 
@@ -754,6 +754,7 @@ census_predict = function(obj, model, contour_data = F, verbose = T, ...){
   obj$census_celltype = '1'
   Idents(obj) = obj$census_celltype
   remaining_ids = '1'
+  allowed_nodes = NULL
 
   # str = '\rNodes predicted: 1'
   while(length(remaining_ids) > 0){
