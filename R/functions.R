@@ -670,18 +670,19 @@ census_predict = function(obj, organ = NULL, test = 'all', predict_cancer = F, c
 
   if(predict_cancer == T){
     # get epithelial cells
-    # if(verbose == T){str = paste0(str, ', ', 'cancer\n   '); cat(str)}
     if(verbose == T){cat(paste('\rPrediciting node:', 'cancer   '))}
     i = which(pred_res[['3']]$final_pred_df$pred == '7')
-    obj = obj[, which(colnames(obj) %in% pred_res[['3']]$final_pred_df$barcode[i])]
-    obj$census_celltype = '0'
-    Idents(obj) = obj$census_celltype
-    cancer_pred = predict_node(obj = obj, model = census_cancer_models[[organ]], node = '0')
-    final_pred$cancer_origin = final_pred$celltype
-    if(length(which(cancer_pred$final_pred_df$pred == 'cancer cell')) > 0){
-      cancer_barcodes = cancer_pred$final_pred_df$barcode[which(cancer_pred$final_pred_df$pred == 'cancer cell')]
-      final_pred$celltype[final_pred$barcode %in% cancer_barcodes] = 'cancer cell'
-      final_pred$cancer_origin[final_pred$celltype != 'cancer cell'] = NA
+    if(length(i) > 0){
+      obj = obj[, which(colnames(obj) %in% pred_res[['3']]$final_pred_df$barcode[i])]
+      obj$census_celltype = '0'
+      Idents(obj) = obj$census_celltype
+      cancer_pred = predict_node(obj = obj, model = census_cancer_models[[organ[1]]], node = '0')
+      final_pred$cancer_origin = final_pred$celltype
+      if(length(which(cancer_pred$final_pred_df$pred == 'cancer cell')) > 0){
+        cancer_barcodes = cancer_pred$final_pred_df$barcode[which(cancer_pred$final_pred_df$pred == 'cancer cell')]
+        final_pred$celltype[final_pred$barcode %in% cancer_barcodes] = 'cancer cell'
+        final_pred$cancer_origin[final_pred$celltype != 'cancer cell'] = NA
+      }
     }
   }
 
