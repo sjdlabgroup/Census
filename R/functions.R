@@ -280,7 +280,7 @@ census_train = function(obj,
 
   if(is.null(hierarchy_mat)){
     if(verbose == T){cat('Finding cell-type hierarchy\n')}
-    hierarchy_mat = cell_hierarchy(counts@assays$RNA@counts, celltypes)
+    hierarchy_mat = cell_hierarchy(obj@assays$RNA@counts, celltypes)
   }
 
   cell_node_match = match(celltypes, colnames(hierarchy_mat))
@@ -289,7 +289,7 @@ census_train = function(obj,
   while(length(remaining_ids) > 0){
     for(i in remaining_ids){
     # loop = foreach(i = remaining_ids, .packages = 'dplyr') %do% {
-      if(verbose == T){cat(paste('\rTraining node:', i, '   '))}
+      if(verbose == T){cat(paste('\rTraining node:', i, '\n'))}
       if(!is.null(markers.list)){markers = markers.list[[i]]}
       node_res = train_node(obj = obj,
                             node = i,
