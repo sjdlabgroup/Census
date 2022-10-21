@@ -5,11 +5,9 @@
 \title{Plot the cell hierarchy}
 \usage{
 plot_cell_hierarchy(
-  hierarchy.mat,
+  hierarchy_mat,
   circular = F,
-  n.color.per.group = NULL,
-  color = c("firebrick1", "firebrick4", "dodgerblue1", "dodgerblue4", "seagreen3",
-    "darkgreen", "slateblue1", "slateblue4"),
+  color = c("#000004FF", "#420A68FF", "#DD513AFF", "#FCA50AFF"),
   edge.thickness = 0.5,
   text.size = 2,
   label.size = 2,
@@ -18,10 +16,24 @@ plot_cell_hierarchy(
 )
 }
 \arguments{
-\item{...}{Arguments passed to other methods}
+\item{hierarchy_mat}{Cell-type hierarchy dataframe produced by the cell_hierarchy function}
+
+\item{circular}{Plots a circular dendorgram if True}
+
+\item{color}{Colors to use for cell lables. Can be a single color or multiple colors. If multiple colors are given they will be matched the major hierarchy branches.}
+
+\item{edge.thickness}{Thickness of dendrogram lines}
+
+\item{text.size}{Cell-type label text size}
+
+\item{label.size}{Node label text size}
+
+\item{label.line.padding}{Controls size of the node label outline}
+
+\item{axis.limits}{Controls horizontal size of dendrogram. Takes arguements in the form "c(x,y)" where x and y can be positive or negative numbers}
 }
 \value{
-A ggraph object plotting the cell hiearchy
+A ggraph object plotting the cell-type hiearchy
 }
 \description{
 Plot the cell hierarchy

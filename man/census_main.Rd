@@ -15,10 +15,22 @@ census_main(
 )
 }
 \arguments{
-\item{...}{Arguments passed to other methods}
+\item{obj}{Seurat object containing training data}
+
+\item{organ}{A vector specifying the organ(s) of the tissue. Can be more than one organ, and if no organ is chosen then all organs and cell-types will be possible prediction results. Allowed organs include: Bladder, Blood, Bone_Marrow, Eye, Fat, Heart, Kidney, Large_Intestine, Liver, Lung, Lymph_Node, Mammary, Muscle, Pancreas, Protate, Salivary_Gland, Skin, Small_Intestine, Spleen, Thymus, Tongue, Trachea, Uterus, Vasculature}
+
+\item{test}{A character specifying either "all" or "tabula_sapiens". "all" will allow prediciton of all theoretically possible cell-types in the given organ. "tabula_sapiens" will limit predictions to cell-types that were directly observed in the given organ in the Tabula Sapiens.}
+
+\item{predict_cancer}{If False, then only normal cell types will be predicted. If cancer cells are expected, set to True. In this case, all cells initially undergo cell-type prediction using the Tabula Sapiens model. Then for those that are classified as epithelial, the organ specific cancer model is applied to predict cancer cells. If multiple organs are specified, the first organ will be used for the cancer model.}
+
+\item{verbose}{If True, some outputs will be printed to the console.}
+
+\item{...}{Arguments passed to other methods. The most useful may be the "resolution" parameter for clustering using Seruat::FindClusters.}
+
+\item{controu_data}{If True, contour data will be retained, if False it will not be output}
 }
 \value{
-A ggraph object plotting the cell hiearchy
+Returns a list that contains the prediction results. The list cnontains the final prediction dataframe, class history of all barcodes, probability history, otional prediction contour data, and a record of adjusted nodes
 }
 \description{
 Automated cell-type annotation using the main Census model trained on the Tabula Sapiens and Cancer Cell Line Encyclopedia

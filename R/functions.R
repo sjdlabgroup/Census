@@ -9,22 +9,24 @@
 #' @importFrom ggdendro "dendro_data"
 #' @importFrom dendextend "partition_leaves"
 #' @import ggraph
+#' @import ggplot2
 #' @importFrom igraph "graph_from_data_frame"
 #' @importFrom igraph "V"
-#' @importFrom ggplot2 "coord_flip"
 #' @importFrom MASS "kde2d"
 #' @importFrom sp "point.in.polygon"
 #' @import foreach
 #' @importFrom matrixStats "rowMaxs"
 #'
-#' @param ... Arguments passed to other methods
+#' @param counts Gene by cell counts matrix
+#' @param celltypes Character vector of cell-type for each barcode in counts
+#' @param counts.bulk Optional pseudo-bulk cell-type by gene counts matrix. May be useful if counts is very large and hard to transpose
 #'
 #' @return A data frame containing the cell hiearchy. Each column describes the node lineage for a given cell-type.
 #' @export
 #'
 cell_hierarchy = function(counts, celltypes, counts.bulk = NULL){
 
-  # counts is a cell by gene matrix
+  # counts is a gene by cell matrix
   # celltypes is a character vector of cell-types for each barcode in counts
 
   counts = Matrix::t(counts)
@@ -78,20 +80,26 @@ cell_hierarchy = function(counts, celltypes, counts.bulk = NULL){
 
 #' Plot the cell hierarchy
 #'
-#' @param ... Arguments passed to other methods
+#' @param hierarchy_mat Cell-type hierarchy dataframe produced by the cell_hierarchy function
+#' @param circular Plots a circular dendorgram if True
+#' @param color Colors to use for cell lables. Can be a single color or multiple colors. If multiple colors are given they will be matched the major hierarchy branches.
+#' @param edge.thickness Thickness of dendrogram lines
+#' @param text.size Cell-type label text size
+#' @param label.size Node label text size
+#' @param label.line.padding Controls size of the node label outline
+#' @param axis.limits Controls horizontal size of dendrogram. Takes arguements in the form "c(x,y)" where x and y can be positive or negative numbers
 #'
-#' @return A ggraph object plotting the cell hiearchy
+#' @return A ggraph object plotting the cell-type hiearchy
 #' @export
 #'
-plot_cell_hierarchy = function(hierarchy.mat, circular = F, n.color.per.group = NULL,
-                               color = c('firebrick1', 'firebrick4', 'dodgerblue1', 'dodgerblue4',
-                                         'seagreen3','darkgreen', 'slateblue1', 'slateblue4'),
+plot_cell_hierarchy = function(hierarchy_mat, circular = F,
+                               color = c('#000004FF', '#420A68FF', '#DD513AFF', '#FCA50AFF'),
                                edge.thickness = 0.5, text.size = 2, label.size = 2,
                                label.line.padding = 0.25, axis.limits = NULL){
 
   edges = list()
-  for(j in 1:ncol(hierarchy.mat)){
-    xx = hierarchy.mat[,j] %>% unique() %>% as.character()
+  for(j in 1:ncol(hierarchy_mat)){
+    xx = hierarchy_mat[,j] %>% unique() %>% as.character()
     d = c()
     for(i in 1:(length(xx)-1)){
       d = rbind(d, data.frame(from = xx[i], to = xx[i+1], check.names = F))
@@ -100,78 +108,72 @@ plot_cell_hierarchy = function(hierarchy.mat, circular = F, n.color.per.group = 
   }
   edges = bind_rows(edges)
 
-  graph = graph_from_data_frame(edges)
+  graph = igraph::graph_from_data_frame(edges)
 
-  paths = apply(hierarchy.mat, 2, function(x) paste(unique(x), collapse = ',')) %>% unlist()
+  paths = apply(hierarchy_mat, 2, function(x) paste(unique(x), collapse = ',')) %>% unlist()
 
-  if(length(color) == 1){V(graph)$color = color}else{
-    color = matrix(color, nrow = 2) %>% t()
-
-    major_group = apply(hierarchy.mat, 2, function(x) unique(x)[nrow(color)/2+1])
-    minor_group = colnames(hierarchy.mat)
-    t = table(major_group, minor_group)
-
-    graph.color = c()
-    for(i in 1:nrow(t)){
-      idx = which(t[i,] > 0)
-      if(is.null(n.color.per.group)){n.color.per.group = length(idx)}
-      c = colorRampPalette(color[i,])(n.color.per.group)
-      if(length(c) < length(idx)){c = rep(c, length.out = length(idx))}
-
-      ii = minor_group[minor_group %in% names(idx)]
-      ii = ii[order(colnames(hierarchy.mat)[colnames(hierarchy.mat) %in% ii])]
-      names(c) = ii
-
-      graph.color = c(graph.color, c)
-    }
-    graph.color = graph.color[match(minor_group, names(graph.color))]
-
-    names(graph.color) = minor_group
-    graph.color = graph.color[match(V(graph)$name, names(graph.color))]
-    V(graph)$color = graph.color
+  if(length(color) == 1){igraph::V(graph)$color = color}else{
+    n = apply(hierarchy_mat, 1, function(x) length(unique(x)))
+    n = which.min(abs(n - length(color)))[1]
+    color = color[1:length(unique(unlist(hierarchy_mat[n,])))]
+    color = rep(color, table(unlist(hierarchy_mat[n, ])))
+    igraph::V(graph)$color = color[match(igraph::V(graph)$name, colnames(hierarchy_mat))]
   }
 
   if(circular == T){
-    ggraph(graph, layout = 'dendrogram', circular = circular) +
-      geom_edge_elbow(width = edge.thickness) +
-      geom_node_text(aes(filter = leaf,
-                         label = name,
-                         angle = -((-node_angle(x, y)+90)%%180)+90,
-                         color = color),
-                     size = text.size, hjust = 'outward') +
-      geom_node_label(aes(filter = leaf == F, label = name), size = label.size,
-                      label.padding = unit(label.line.padding, 'lines')) +
-      scale_color_identity() +
-      theme_void() +
-      theme(legend.position="none",
-            plot.margin=unit(c(0,0,0,0),"cm")) +
-      expand_limits(x = c(-1.5, 1.5), y = c(-1.5, 1.5))
+    ggraph::ggraph(graph, layout = 'dendrogram', circular = circular) +
+      ggraph::geom_edge_elbow(width = edge.thickness) +
+      ggraph::geom_node_text(ggplot2::aes(filter = leaf,
+                                          label = name,
+                                          angle = -((-node_angle(x, y)+90)%%180)+90,
+                                          color = color),
+                             size = text.size, hjust = 'outward') +
+      ggraph::geom_node_label(ggplot2::aes(filter = leaf == F, label = name), size = label.size,
+                              label.padding = ggplot2::unit(label.line.padding, 'lines')) +
+      ggplot2::scale_color_identity() +
+      ggplot2::theme_void() +
+      ggplot2::theme(legend.position="none",
+                     plot.margin=ggplot2::unit(c(0,0,0,0),"cm")) +
+      ggplot2::expand_limits(x = c(-1.5, 1.5), y = c(-1.5, 1.5))
   }
   else{
-    ggraph(graph, layout = 'dendrogram', circular = circular) +
-      coord_flip() +
-      scale_y_reverse(limits = axis.limits) +
-      geom_edge_elbow(width = edge.thickness) +
-      geom_node_text(aes(filter = leaf,
-                         label = name,
-                         color = color),
-                     size = text.size,
-                     hjust = 'left') +
-      geom_node_label(aes(filter = leaf == F, label = name), size = label.size,
-                      label.padding = unit(label.line.padding, 'lines')) +
-      scale_color_identity() +
-      theme_void() +
-      theme(legend.position="none",
-            plot.margin=unit(c(0,0,0,0),"cm")) +
-      expand_limits(x = c(-1.5, 1.5), y = c(-1.5, 1.5))
+    ggraph::ggraph(graph, layout = 'dendrogram', circular = circular) +
+      ggplot2::coord_flip() +
+      ggplot2::scale_y_reverse(limits = axis.limits) +
+      ggraph::geom_edge_elbow(width = edge.thickness) +
+      ggraph::geom_node_text(ggplot2::aes(filter = leaf,
+                                          label = name,
+                                          color = color),
+                             size = text.size,
+                             hjust = 'left') +
+      ggraph::geom_node_label(ggplot2::aes(filter = leaf == F, label = name), size = label.size,
+                              label.padding = ggplot2::unit(label.line.padding, 'lines')) +
+      ggplot2::scale_color_identity() +
+      ggplot2::theme_void() +
+      ggplot2::theme(legend.position="none",
+                     plot.margin=ggplot2::unit(c(0,0,0,0),"cm")) +
+      ggplot2::expand_limits(x = c(-1.5, 1.5), y = c(-1.5, 1.5))
   }
 }
 
-#' Train a classifier on a specific node in the cell hierarchy
+#' Internal function for training a classifier on a specific node in the cell hierarchy
 #'
+#' @param obj Seurat object containing training data
+#' @param node Character giving node identity to train
+#' @param hierarchy_mat Cell-type hierarchy dataframe
+#' @param celltypes Character vector of cell-type identities for all barcodes in the training data
+#' @param metadata Optional metadata to use for proportional weighting of training data. Default weighting of training data is to weight inversely proportional to class size
+#' @param markers Optional cell-type markers to be used for model training. Must be a dataframe with a column named "gene". If absent, Seurat's FindMarkers is used.
+#' @param cell_node_match Optional custom matching of cell-type labels to cell-type hierarchy labels. This should seldom be used.
+#' @param sparsity Fraction of values to replace with NA/missing values. Can be a vector or NULL
+#' @param ptile Number of ntile groups to create for gene expression values; e.g. if 100, will percentile rank genes per cell, if 4 will quartile rank genes
+#' @param topn Optional number of marker genes to use per model. Will selec the topn genes by fold change ranking. If NULL will use all statistically significant genes
+#' @param nrounds Number of boosting rounds for model classification
+#' @param eval_metric Evaluation metric for xgbosot classification algorithm
+#' @param colsample Fraction of features to sample per tree. See xgboost documentation for more details for this and other possible parameters
 #' @param ... Arguments passed to other methods
 #'
-#' @return A ggraph object plotting the cell hiearchy
+#' @return Returns a list containing the xgboost model, a dataframe containing the marker genes data, and the classification AUC
 #' @export
 #'
 train_node = function(obj,
@@ -182,8 +184,6 @@ train_node = function(obj,
                       markers = NULL,
                       cell_node_match = NULL,
                       sparsity = c(0.9),
-                      noise = c(-0.5, 0.5),
-                      noise_frac = 0.5,
                       ptile = 100,
                       topn = NULL,
                       nrounds = 20,
@@ -212,14 +212,6 @@ train_node = function(obj,
       f = replicate(ncol(new_x), rbinom(nrow(new_x), 1, 1-sparsity[i]))
       x = cbind(x, new_x*f)
     }
-  }
-
-  # add noise
-  if(!is.null(noise)){
-    f = replicate(ncol(new_x), runif(nrow(new_x), noise[1], noise[2]))
-    r = replicate(ncol(new_x), rbinom(nrow(new_x), 1, noise_frac))
-    f = f*r; f[f == 0] = 1
-    x = cbind(x, new_x*f)
   }
 
   x[x == 0] = NA
@@ -253,21 +245,31 @@ train_node = function(obj,
 
 }
 
-#' Train a hierarchical Census model
+#' Train a hierarchical Census model given reference counts data and cell-type labels
 #'
-#' @param ... Arguments passed to other methods
+#' @param obj Seurat object containing training data
+#' @param celltypes Character vector of cell-type identities for all barcodes in the training data
+#' @param hierarchy_mat Cell-type hierarchy dataframe
+#' @param metadata Optional metadata to use for proportional weighting of training data. Default weighting of training data is to weight inversely proportional to class size
+#' @param markers.list Optional list containing cell-type markers to be used for model training. Each list element must contain a dataframe with a column named "gene". If absent, Seurat's FindMarkers is used. The list must be named according to the cell-type hierarchy node names.
+#' @param cell_node_match Optional custom matching of cell-type labels to cell-type hierarchy labels. This should seldom be used.
+#' @param sparsity Fraction of values to replace with NA/missing values. Can be a vector or NULL
+#' @param ptile Number of ntile groups to create for gene expression values; e.g. if 100, will percentile rank genes per cell, if 4 will quartile rank genes
+#' @param topn Optional number of marker genes to use per model. Will selec the topn genes by fold change ranking. If NULL will use all statistically significant genes
+#' @param nrounds Number of boosting rounds for model classification
+#' @param eval_metric Evaluation metric for xgbosot classification algorithm
+#' @param colsample Fraction of features to sample per tree. See xgboost documentation for more details for this and other possible parameters
+#' @param ... Arguments passed to other methods. The most relevant methods include train_node, Seurat::FindAllMarkers, and xgboost::xgboost
 #'
-#' @return A ggraph object plotting the cell hiearchy
+#' @return Returns a list containing the hierarchical models, a list of dataframes containing the marker genes data for each node model, the classification AUC for each node model, and the cell-type hierarchy used
 #' @export
 #'
 census_train = function(obj,
-                        hierarchy_mat = NULL,
                         celltypes,
+                        hierarchy_mat = NULL,
                         metadata = NULL,
                         markers.list = NULL,
                         sparsity = c(0.9),
-                        noise = c(-0.5, 0.5),
-                        noise_frac = 0.5,
                         ptile = 100,
                         nrounds = 20,
                         eval_metric = 'auc',
@@ -321,11 +323,14 @@ census_train = function(obj,
   list(models = xg.list, markers = markers.list, auc = auc.df, hierarchy_mat = hierarchy_mat)
 }
 
-#' Label stabilizing algorithm using cluster and prediction contour adjustment
+#' Label stabilizing algorithm using cluster and prediction contour adjustment. Used in census_predict. First, the average label is propagated within each UMAP SNN cluster. Next, prediction contours are computed on the UMAP plot using the MASS R package. In areas where prediction contours do not overlap, all cells within the contour are given the identity of the contour. In areas where the prediction contours overlap, cells within the overlapping region are given the identity of the most common label in that region. After resolving contour disputes, the most common label is again propagated across each UMAP SNN cluster, and new prediction contours are computed. This process is repeated until either there are no more overlapping prediction contours or until there are no further changes to any cell labels.
 #'
-#' @param ... Arguments passed to other methods
+#' @param pred_df Initial prediction dataframe from census_predict that contains barcode, umap, and model prediction data.
+#' @param contour_level Fraction of points to be included in prediciton contours. Default is 0.999.
+#' @param min_prob_diff Probability difference from 0.5 of barcodes to include when calculating prediction contours. The default is to use all data.
+#' @param contour_n Number of contour x-y coordinates to estimate.
 #'
-#' @return A ggraph object plotting the cell hiearchy
+#' @return Returns a list that contains the final prediction dataframe, the prediction history during the algorithm, and a list containing the contours from each round of the algorithm.
 #' @export
 #'
 contour_adjust = function(pred_df, contour_level = 0.999, min_prob_diff = 0, contour_n = 200){
@@ -478,11 +483,15 @@ contour_adjust = function(pred_df, contour_level = 0.999, min_prob_diff = 0, con
   list(final_pred_df = pred_df, pred_mat = pred_mat, cl.list = cl.list)
 }
 
-#' Predict cell identities for a specific node in the hierarchical model
+#' Predict cell identities for a specific node in the hierarchical model. Used internally census_predict
 #'
-#' @param ... Arguments passed to other methods
+#' @param obj Seurat object containing training data
+#' @param model Model list that contains the hierarchcial models, markers, cell-type hierarchy that is the output of census_train.
+#' @param node Character identity of the node to predict
+#' @param get_prob If False, the main Tabula Sapiens model will bypass models if one node is not an allowed node. If True, the model will still perform classification at that node and will report probabilities, and unallowed nodes will be adjusted.
+#' @param allowed_nodes For the Tabula Sapiens model, if any nodes are not allowed for a specific organ their prediction will accordingly be adjusted.
 #'
-#' @return A ggraph object plotting the cell hiearchy
+#' @return Returns the output from the label stabilizing algorithm: a list that contains the final prediction dataframe, the prediction history during the algorithm, and a list containing the contours from each round of the algorithm.
 #' @export
 #'
 predict_node = function(obj, model, node, get_prob = T, allowed_nodes = NULL){
@@ -547,9 +556,16 @@ predict_node = function(obj, model, node, get_prob = T, allowed_nodes = NULL){
 
 #' Automated cell-type annotation using the main Census model trained on the Tabula Sapiens and Cancer Cell Line Encyclopedia
 #'
-#' @param ... Arguments passed to other methods
+#' @param obj Seurat object containing training data
+#' @param organ A vector specifying the organ(s) of the tissue. Can be more than one organ, and if no organ is chosen then all organs and cell-types will be possible prediction results. Allowed organs include: Bladder, Blood, Bone_Marrow, Eye, Fat, Heart, Kidney, Large_Intestine, Liver, Lung, Lymph_Node, Mammary, Muscle, Pancreas, Protate, Salivary_Gland, Skin, Small_Intestine, Spleen, Thymus, Tongue, Trachea, Uterus, Vasculature
+#' @param test A character specifying either "all" or "tabula_sapiens". "all" will allow prediciton of all theoretically possible cell-types in the given organ. "tabula_sapiens" will limit predictions to cell-types that were directly observed in the given organ in the Tabula Sapiens.
+#' @param predict_cancer If False, then only normal cell types will be predicted. If cancer cells are expected, set to True. In this case, all cells initially undergo cell-type prediction using the Tabula Sapiens model. Then for those that are classified as epithelial, the organ specific cancer model is applied to predict cancer cells. If multiple organs are specified, the first organ will be used for the cancer model. Cancer models are available for the following organs: Kidney, Large_Intestine, Liver, Lung, Mammary, Pancreas.
+#' @param controu_data If True, contour data will be retained, if False it will not be output
+#' @param verbose If True, some outputs will be printed to the console.
 #'
-#' @return A ggraph object plotting the cell hiearchy
+#' @param ... Arguments passed to other methods. The most useful may be the "resolution" parameter for clustering using Seruat::FindClusters.
+#'
+#' @return Returns a list that contains the prediction results. The list cnontains the final prediction dataframe, class history of all barcodes, probability history, otional prediction contour data, and a record of adjusted nodes
 #' @export
 #'
 census_main = function(obj, organ = NULL, test = 'all', predict_cancer = F, contour_data = F, verbose = T, ...){
@@ -713,6 +729,10 @@ census_main = function(obj, organ = NULL, test = 'all', predict_cancer = F, cont
 
 #' Use a Census model to annotate new datasets
 #'
+#' @param obj Seurat object containing training data
+#' @param model Hierarchical models list that is the output of census_train. Contains the models, markers, and cell-type hierarchy
+#' @param contour_data If True, contour data are outputed
+#' @param verbose if True, messages are printed to the console during prediction.
 #' @param ... Arguments passed to other methods
 #'
 #' @return A ggraph object plotting the cell hiearchy
@@ -786,7 +806,7 @@ census_predict = function(obj, model, contour_data = F, verbose = T, ...){
 
   if(contour_data == F){pred_res = NULL}
 
-  list(pred = final_pred, class_hist = class_hist, prob_hist = prob_hist, pred_data = pred_res, adjusted_nodes = adjusted_nodes)
+  list(pred = final_pred, class_hist = class_hist, prob_hist = prob_hist, pred_data = pred_res)
 }
 
 

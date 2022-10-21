@@ -2,17 +2,15 @@
 % Please edit documentation in R/functions.R
 \name{census_train}
 \alias{census_train}
-\title{Train a hierarchical Census model}
+\title{Train a hierarchical Census model given reference counts data and cell-type labels}
 \usage{
 census_train(
   obj,
-  hierarchy_mat = NULL,
   celltypes,
+  hierarchy_mat = NULL,
   metadata = NULL,
   markers.list = NULL,
   sparsity = c(0.9),
-  noise = c(-0.5, 0.5),
-  noise_frac = 0.5,
   ptile = 100,
   nrounds = 20,
   eval_metric = "auc",
@@ -22,11 +20,35 @@ census_train(
 )
 }
 \arguments{
-\item{...}{Arguments passed to other methods}
+\item{obj}{Seurat object containing training data}
+
+\item{celltypes}{Character vector of cell-type identities for all barcodes in the training data}
+
+\item{hierarchy_mat}{Cell-type hierarchy dataframe}
+
+\item{metadata}{Optional metadata to use for proportional weighting of training data. Default weighting of training data is to weight inversely proportional to class size}
+
+\item{markers.list}{Optional list containing cell-type markers to be used for model training. Each list element must contain a dataframe with a column named "gene". If absent, Seurat's FindMarkers is used. The list must be named according to the cell-type hierarchy node names.}
+
+\item{sparsity}{Fraction of values to replace with NA/missing values. Can be a vector or NULL}
+
+\item{ptile}{Number of ntile groups to create for gene expression values; e.g. if 100, will percentile rank genes per cell, if 4 will quartile rank genes}
+
+\item{nrounds}{Number of boosting rounds for model classification}
+
+\item{eval_metric}{Evaluation metric for xgbosot classification algorithm}
+
+\item{colsample}{Fraction of features to sample per tree. See xgboost documentation for more details for this and other possible parameters}
+
+\item{...}{Arguments passed to other methods. The most relevant methods include train_node, Seurat::FindAllMarkers, and xgboost::xgboost}
+
+\item{cell_node_match}{Optional custom matching of cell-type labels to cell-type hierarchy labels. This should seldom be used.}
+
+\item{topn}{Optional number of marker genes to use per model. Will selec the topn genes by fold change ranking. If NULL will use all statistically significant genes}
 }
 \value{
-A ggraph object plotting the cell hiearchy
+Returns a list containing the hierarchical models, a list of dataframes containing the marker genes data for each node model, the classification AUC for each node model, and the cell-type hierarchy used
 }
 \description{
-Train a hierarchical Census model
+Train a hierarchical Census model given reference counts data and cell-type labels
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions.R
 \name{contour_adjust}
 \alias{contour_adjust}
-\title{Label stabilizing algorithm using cluster and prediction contour adjustment}
+\title{Label stabilizing algorithm using cluster and prediction contour adjustment. Used in census_predict. First, the average label is propagated within each UMAP SNN cluster. Next, prediction contours are computed on the UMAP plot using the MASS R package. In areas where prediction contours do not overlap, all cells within the contour are given the identity of the contour. In areas where the prediction contours overlap, cells within the overlapping region are given the identity of the most common label in that region. After resolving contour disputes, the most common label is again propagated across each UMAP SNN cluster, and new prediction contours are computed. This process is repeated until either there are no more overlapping prediction contours or until there are no further changes to any cell labels.}
 \usage{
 contour_adjust(
   pred_df,
@@ -12,11 +12,17 @@ contour_adjust(
 )
 }
 \arguments{
-\item{...}{Arguments passed to other methods}
+\item{pred_df}{Initial prediction dataframe from census_predict that contains barcode, umap, and model prediction data.}
+
+\item{contour_level}{Fraction of points to be included in prediciton contours. Default is 0.999.}
+
+\item{min_prob_diff}{Probability difference from 0.5 of barcodes to include when calculating prediction contours. The default is to use all data.}
+
+\item{contour_n}{Number of contour x-y coordinates to estimate.}
 }
 \value{
-A ggraph object plotting the cell hiearchy
+Returns a list that contains the final prediction dataframe, the prediction history during the algorithm, and a list containing the contours from each round of the algorithm.
 }
 \description{
-Label stabilizing algorithm using cluster and prediction contour adjustment
+Label stabilizing algorithm using cluster and prediction contour adjustment. Used in census_predict. First, the average label is propagated within each UMAP SNN cluster. Next, prediction contours are computed on the UMAP plot using the MASS R package. In areas where prediction contours do not overlap, all cells within the contour are given the identity of the contour. In areas where the prediction contours overlap, cells within the overlapping region are given the identity of the most common label in that region. After resolving contour disputes, the most common label is again propagated across each UMAP SNN cluster, and new prediction contours are computed. This process is repeated until either there are no more overlapping prediction contours or until there are no further changes to any cell labels.
 }

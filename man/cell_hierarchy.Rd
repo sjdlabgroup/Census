@@ -7,7 +7,11 @@
 cell_hierarchy(counts, celltypes, counts.bulk = NULL)
 }
 \arguments{
-\item{...}{Arguments passed to other methods}
+\item{counts}{Gene by cell counts matrix}
+
+\item{celltypes}{Character vector of cell-type for each barcode in counts}
+
+\item{counts.bulk}{Optional pseudo-bulk cell-type by gene counts matrix. May be useful if counts is very large and hard to transpose}
 }
 \value{
 A data frame containing the cell hiearchy. Each column describes the node lineage for a given cell-type.

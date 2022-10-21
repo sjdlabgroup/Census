@@ -2,16 +2,24 @@
 % Please edit documentation in R/functions.R
 \name{predict_node}
 \alias{predict_node}
-\title{Predict cell identities for a specific node in the hierarchical model}
+\title{Predict cell identities for a specific node in the hierarchical model. Used internally census_predict}
 \usage{
 predict_node(obj, model, node, get_prob = T, allowed_nodes = NULL)
 }
 \arguments{
-\item{...}{Arguments passed to other methods}
+\item{obj}{Seurat object containing training data}
+
+\item{model}{Model list that contains the hierarchcial models, markers, cell-type hierarchy that is the output of census_train.}
+
+\item{node}{Character identity of the node to predict}
+
+\item{get_prob}{If False, the main Tabula Sapiens model will bypass models if one node is not an allowed node. If True, the model will still perform classification at that node and will report probabilities, and unallowed nodes will be adjusted.}
+
+\item{allowed_nodes}{For the Tabula Sapiens model, if any nodes are not allowed for a specific organ their prediction will accordingly be adjusted.}
 }
 \value{
-A ggraph object plotting the cell hiearchy
+Returns the output from the label stabilizing algorithm: a list that contains the final prediction dataframe, the prediction history during the algorithm, and a list containing the contours from each round of the algorithm.
 }
 \description{
-Predict cell identities for a specific node in the hierarchical model
+Predict cell identities for a specific node in the hierarchical model. Used internally census_predict
 }

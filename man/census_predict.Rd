@@ -7,6 +7,14 @@
 census_predict(obj, model, contour_data = F, verbose = T, ...)
 }
 \arguments{
+\item{obj}{Seurat object containing training data}
+
+\item{model}{Hierarchical models list that is the output of census_train. Contains the models, markers, and cell-type hierarchy}
+
+\item{contour_data}{If True, contour data are outputed}
+
+\item{verbose}{if True, messages are printed to the console during prediction.}
+
 \item{...}{Arguments passed to other methods}
 }
 \value{

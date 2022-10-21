@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions.R
 \name{train_node}
 \alias{train_node}
-\title{Train a classifier on a specific node in the cell hierarchy}
+\title{Internal function for training a classifier on a specific node in the cell hierarchy}
 \usage{
 train_node(
   obj,
@@ -13,8 +13,6 @@ train_node(
   markers = NULL,
   cell_node_match = NULL,
   sparsity = c(0.9),
-  noise = c(-0.5, 0.5),
-  noise_frac = 0.5,
   ptile = 100,
   topn = NULL,
   nrounds = 20,
@@ -24,11 +22,37 @@ train_node(
 )
 }
 \arguments{
+\item{obj}{Seurat object containing training data}
+
+\item{node}{Character giving node identity to train}
+
+\item{hierarchy_mat}{Cell-type hierarchy dataframe}
+
+\item{celltypes}{Character vector of cell-type identities for all barcodes in the training data}
+
+\item{metadata}{Optional metadata to use for proportional weighting of training data. Default weighting of training data is to weight inversely proportional to class size}
+
+\item{markers}{Optional cell-type markers to be used for model training. Must be a dataframe with a column named "gene". If absent, Seurat's FindMarkers is used.}
+
+\item{cell_node_match}{Optional custom matching of cell-type labels to cell-type hierarchy labels. This should seldom be used.}
+
+\item{sparsity}{Fraction of values to replace with NA/missing values. Can be a vector or NULL}
+
+\item{ptile}{Number of ntile groups to create for gene expression values; e.g. if 100, will percentile rank genes per cell, if 4 will quartile rank genes}
+
+\item{topn}{Optional number of marker genes to use per model. Will selec the topn genes by fold change ranking. If NULL will use all statistically significant genes}
+
+\item{nrounds}{Number of boosting rounds for model classification}
+
+\item{eval_metric}{Evaluation metric for xgbosot classification algorithm}
+
+\item{colsample}{Fraction of features to sample per tree. See xgboost documentation for more details for this and other possible parameters}
+
 \item{...}{Arguments passed to other methods}
 }
 \value{
-A ggraph object plotting the cell hiearchy
+Returns a list containing the xgboost model, a dataframe containing the marker genes data, and the classification AUC
 }
 \description{
-Train a classifier on a specific node in the cell hierarchy
+Internal function for training a classifier on a specific node in the cell hierarchy
 }
