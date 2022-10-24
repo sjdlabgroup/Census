@@ -54,6 +54,7 @@ This example uses Census to predict cell-types in lung cell atlas data from Trav
 
 ``` r
 library(Census)
+library(dplyr)
 library(Seurat)
 library(ggplot2)
 library(ggrepel)
@@ -99,6 +100,7 @@ This example uses Census to predict cell-types in a pancreatic cancer dataset da
 
 ``` r
 library(Census)
+library(dplyr)
 library(Seurat)
 library(ggplot2)
 library(ggrepel)
@@ -162,6 +164,7 @@ The only inputs for model training are a Seurat object containing training data 
 
 ``` r
 library(Census)
+library(dplyr)
 library(Seurat)
 library(ggplot2)
 library(ggrepel)
