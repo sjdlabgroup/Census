@@ -21,7 +21,7 @@ census_main(
 
 \item{test}{A character specifying either "all" or "tabula_sapiens". "all" will allow prediciton of all theoretically possible cell-types in the given organ. "tabula_sapiens" will limit predictions to cell-types that were directly observed in the given organ in the Tabula Sapiens.}
 
-\item{predict_cancer}{If False, then only normal cell types will be predicted. If cancer cells are expected, set to True. In this case, all cells initially undergo cell-type prediction using the Tabula Sapiens model. Then for those that are classified as epithelial, the organ specific cancer model is applied to predict cancer cells. If multiple organs are specified, the first organ will be used for the cancer model.}
+\item{predict_cancer}{If False, then only normal cell types will be predicted. If cancer cells are expected, set to True. In this case, all cells initially undergo cell-type prediction using the Tabula Sapiens model. Then for those that are classified as epithelial, the organ specific cancer model is applied to predict cancer cells. If multiple organs are specified, the first organ will be used for the cancer model. Cancer models are available for the following organs: Kidney, Large_Intestine, Liver, Lung, Mammary, Pancreas.}
 
 \item{verbose}{If True, some outputs will be printed to the console.}
 
