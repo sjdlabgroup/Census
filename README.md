@@ -12,6 +12,8 @@ Bassel Ghaddar
 5.  Advanced options
 6.  Reference
 
+Note: a demo script (demo.r) and dataset (peng_sub.RDS) are also included in this directory.
+
 ## 1. Introduction
 
 Census is a fast and fully automated hierarchical cell-type identification method in R for single-cell RNA-seq (scRNA-seq). Briefly, Census implements a collection of hierarchically organized gradient-boosted decision tree models that successively classify individual cells according to a predefined cell-type hierarchy (Fig. 1a). New datasets are annotated using the pretrained models followed by a custom-developed label-stabilizing algorithm (Fig. 1b). This involves using clusters and prediction contours in UMAP space to propagate higher confidence binary prediction outcomes. The Census model starts at the root node of the cell-type hierarchy and successively classifies cells according to their node identities until terminal classifications are reached. The main Census model is trained on the Tabula Sapiens and Cancer Cell Line Encyclopedia and can identify 175 cell-types from 24 organs. It can also identify cancer cells and their likely cell of origin. Custom models can also be easily trained using other references. The main functionality is described below.
