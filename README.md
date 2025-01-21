@@ -13,6 +13,7 @@ Bassel Ghaddar
 6.  Reference
 
 Note: a demo script (demo.r) and dataset (peng_sub.RDS) are also included in this directory.
+
 Also note: Census requires Seurat version 4 to run. Please install and load Seurat v4 prior to loading the Census library in R. 
 
 ## 1. Introduction
