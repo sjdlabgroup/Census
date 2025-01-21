@@ -222,4 +222,4 @@ For any questions, please contact Bassel Ghaddar: bassel dot ghaddar at gmail do
 
 Please also see the following preprint for more information!
 
-Ghaddar, B. and De, S. (2022). Census: accurate, automated, deep, fast, and hierarchical scRNA-seq cell-type annotation. BioRxiv.
+Ghaddar, B. and De, S. (2023). Hierarchical and automated cell-type annotation and inference of cancer cell of origin with Census. Bioinformatics. https://doi.org/10.1093/bioinformatics/btad714 
